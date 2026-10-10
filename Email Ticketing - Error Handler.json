@@ -1,0 +1,73 @@
+{
+  "name": "Email Ticketing - Error Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0C7ZTUSRCY",
+          "mode": "list",
+          "cachedResultName": "admin"
+        },
+        "text": "=🚨 WORKFLOW ERROR\n\n⚙️ Workflow: [{{ $json.workflow.name }}]\n❌ Failed Node: [{{ $json.execution.lastNodeExecuted }}]\n📝 Error: [{{ $json.execution.error.message }}]\n🔗 Execution: [{{ $json.execution.url }}]\n\nPlease check the workflow execution.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        224,
+        0
+      ],
+      "id": "bc973203-ecbe-4b61-b536-5fd22f5922f6",
+      "name": "Notify Admin of Workflow Error.",
+      "webhookId": "e26d0edc-d998-4097-89fb-bbbf5352c6c8",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Xyu8eGl7R4HKSW2B",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "02710926-6021-4a7b-8138-42f7b8028068",
+      "name": "Catch Workflow Error"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Catch Workflow Error": {
+      "main": [
+        [
+          {
+            "node": "Notify Admin of Workflow Error.",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "fa505ed3-bbc2-465d-8bed-6f4d923c7661",
+  "meta": {
+    "instanceId": "b04ad7fc0f6b73b7df1bfdb90bc66713d6218007f43f8d9ec37d563e68400e56"
+  },
+  "nodeGroups": [],
+  "id": "TuDgBisUVhgJAXA2",
+  "tags": []
+}

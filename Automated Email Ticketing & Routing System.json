@@ -1,0 +1,597 @@
+{
+  "name": "Automated Email Ticketing & Routing System",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "maxResults": 1,
+        "filters": {
+          "includeDrafts": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ee9b1bab-464d-4ad0-8be4-eb0c3c1f7947",
+      "name": "Receive Customer Email",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "pgIU5BDAqAOXTGSj",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1f9668fe-adf5-4863-a6ff-29b0a1ce4668",
+              "name": "customerName",
+              "value": "={{ $json.From.split('<')[0].trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "ba18196a-5277-4f33-995c-c9aa0b477514",
+              "name": "customerEmail",
+              "value": "={{ $json.From.match(/<(.+)>/)[1] }}",
+              "type": "string"
+            },
+            {
+              "id": "70816f9f-750d-4c06-b68a-8cd9ffd76fe1",
+              "name": "subject",
+              "value": "={{ $json.Subject }}",
+              "type": "string"
+            },
+            {
+              "id": "2a7d5022-8993-43ee-acab-cd867c85d5af",
+              "name": "message",
+              "value": "={{ $json.snippet }}",
+              "type": "string"
+            },
+            {
+              "id": "d627e9e4-41dd-4d8e-807d-2e6ab02ad7c9",
+              "name": "ID",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "91a422ef-3423-41dd-a88b-adf0a24c2f0c",
+              "name": "receivedAt",
+              "value": "={{ $now }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "4554ebd3-e19e-4e3f-b77a-4eda17845c16",
+      "name": "Prepare Email Data"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message }}",
+                    "rightValue": "error",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "477c095c-36da-4ab7-a7d5-070bfd9e156c"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "cb9f8f76-895b-4b29-b0b2-82f5f6fbacc9",
+                    "leftValue": "={{ $json.message }}",
+                    "rightValue": "pricing",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        -16
+      ],
+      "id": "50874ac4-336b-4f4e-9ab0-4b98f7f9a785",
+      "name": "Classify Request"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "databasePage",
+        "dataSourceId": {
+          "__rl": true,
+          "value": "3f1452ff-cbd5-8087-8da2-000bc5a387c3",
+          "mode": "list",
+          "cachedResultName": "Customer Support Tickets\n",
+          "cachedResultUrl": "https://app.notion.com/p/3f1452ffcbd580408e28f8744f8286ae"
+        },
+        "title": "Support Tickets",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Ticket ID|title",
+              "title": "={{ $json.ID }}"
+            },
+            {
+              "key": "Customer Name|rich_text",
+              "textContent": "={{ $json.customerName }}"
+            },
+            {
+              "key": "Email|email",
+              "emailValue": "={{ $json.customerEmail }}"
+            },
+            {
+              "key": "Subject|rich_text",
+              "textContent": "={{ $json.subject }}"
+            },
+            {
+              "key": "Message|rich_text",
+              "textContent": "={{ $json.message }}"
+            },
+            {
+              "key": "Category|select",
+              "selectValue": "Technical Support"
+            },
+            {
+              "key": "Status|select",
+              "selectValue": "New"
+            },
+            {
+              "key": "Received At|date",
+              "date": "={{ $json.receivedAt }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 3,
+      "position": [
+        768,
+        -160
+      ],
+      "id": "d99ebd72-45af-46ce-bb65-a2eba08129ee",
+      "name": "Create Support Ticket",
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "c9J6o1NirprXDIyA",
+          "name": "Notion account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "databasePage",
+        "dataSourceId": {
+          "__rl": true,
+          "value": "3f1452ff-cbd5-8087-8da2-000bc5a387c3",
+          "mode": "list",
+          "cachedResultName": "Customer Support Tickets\n",
+          "cachedResultUrl": "https://app.notion.com/p/3f1452ffcbd580408e28f8744f8286ae"
+        },
+        "title": "Support Tickets",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Ticket ID|title",
+              "title": "={{ $json.ID }}"
+            },
+            {
+              "key": "Customer Name|rich_text",
+              "textContent": "={{ $json.customerName }}"
+            },
+            {
+              "key": "Email|email",
+              "emailValue": "={{ $json.customerEmail }}"
+            },
+            {
+              "key": "Subject|rich_text",
+              "textContent": "={{ $json.subject }}"
+            },
+            {
+              "key": "Message|rich_text",
+              "textContent": "={{ $json.message }}"
+            },
+            {
+              "key": "Category|select",
+              "selectValue": "Sales"
+            },
+            {
+              "key": "Status|select",
+              "selectValue": "New"
+            },
+            {
+              "key": "Received At|date",
+              "date": "={{ $json.receivedAt }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 3,
+      "position": [
+        768,
+        0
+      ],
+      "id": "ba67b33b-c665-464b-bf30-2e261e0261d7",
+      "name": "Create Sales Ticket",
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "c9J6o1NirprXDIyA",
+          "name": "Notion account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "databasePage",
+        "dataSourceId": {
+          "__rl": true,
+          "value": "3f1452ff-cbd5-8087-8da2-000bc5a387c3",
+          "mode": "list",
+          "cachedResultName": "Customer Support Tickets\n",
+          "cachedResultUrl": "https://app.notion.com/p/3f1452ffcbd580408e28f8744f8286ae"
+        },
+        "title": "Support Tickets",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Ticket ID|title",
+              "title": "={{ $json.ID }}"
+            },
+            {
+              "key": "Customer Name|rich_text",
+              "textContent": "={{ $json.customerName }}"
+            },
+            {
+              "key": "Email|email",
+              "emailValue": "={{ $json.customerEmail }}"
+            },
+            {
+              "key": "Subject|rich_text",
+              "textContent": "={{ $json.subject }}"
+            },
+            {
+              "key": "Message|rich_text",
+              "textContent": "={{ $json.message }}"
+            },
+            {
+              "key": "Category|select",
+              "selectValue": "General Inquiry"
+            },
+            {
+              "key": "Status|select",
+              "selectValue": "New"
+            },
+            {
+              "key": "Received At|date",
+              "date": "={{ $json.receivedAt }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 3,
+      "position": [
+        768,
+        176
+      ],
+      "id": "8fa6a584-96dd-4614-9a5c-e016317f12a1",
+      "name": "Create General Ticket",
+      "credentials": {
+        "notionOAuth2Api": {
+          "id": "c9J6o1NirprXDIyA",
+          "name": "Notion account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.property_email }}",
+        "subject": "Your request has been received",
+        "emailType": "text",
+        "message": "=Hi {{ $json.customerName }},  We have received your request successfully.  Your ticket reference is: {{ $json.ID }}  Our team will get back to you as soon as possible.  Thank you.",
+        "options": {
+          "appendAttribution": true
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1360,
+        0
+      ],
+      "id": "d740b004-0437-45fd-8930-91a1538b9337",
+      "name": "Send Confirmation",
+      "webhookId": "8f6df3e8-ba5c-4c8a-9b98-b829b28c6210",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "pgIU5BDAqAOXTGSj",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0C72NZUMV0",
+          "mode": "list",
+          "cachedResultName": "support-team"
+        },
+        "text": "=🚨 New Support Ticket\n\n🎫 Ticket ID: [{{ $json.id }}]\n👤 Customer: [{{ $json.property_customer_name }}]\n📧 Email: [{{ $json.property_email }}]\n📌 Subject: [{{ $json.property_subject }}]\n💬 Message: [{{ $json.property_message }}]\n\nStatus: New",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        992,
+        -160
+      ],
+      "id": "de28f66c-c14c-42df-a434-5c23dc0025b9",
+      "name": "Notify Support Team",
+      "webhookId": "9d2b44a4-8da3-4150-9401-44a9c1a5cd04",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Xyu8eGl7R4HKSW2B",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0C72NZUMV0",
+          "mode": "list",
+          "cachedResultName": "support-team"
+        },
+        "text": "=🚨 New sales Ticket\n\n🎫 Ticket ID: [{{ $json.id }}]\n👤 Customer: [{{ $json.property_customer_name }}]\n📧 Email: [{{ $json.property_email }}]\n📌 Subject: [{{ $json.property_subject }}]\n💬 Message: [{{ $json.property_message }}]\n\nStatus: New",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        992,
+        0
+      ],
+      "id": "8de9387b-89ae-4096-9a1d-906e76162ab9",
+      "name": "Notify sales Team",
+      "webhookId": "9d2b44a4-8da3-4150-9401-44a9c1a5cd04",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Xyu8eGl7R4HKSW2B",
+          "name": "Slack account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0C72NZUMV0",
+          "mode": "list",
+          "cachedResultName": "support-team"
+        },
+        "text": "=🚨 New General Ticket\n\n🎫 Ticket ID: [{{ $json.id }}]\n👤 Customer: [{{ $json.property_customer_name }}]\n📧 Email: [{{ $json.property_email }}]\n📌 Subject: [{{ $json.property_subject }}]\n💬 Message: [{{ $json.property_message }}]\n\nStatus: New",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        992,
+        176
+      ],
+      "id": "ca2f761e-ee8e-4559-9c2a-9316b8542c2b",
+      "name": "Notify GeneralTeam",
+      "webhookId": "9d2b44a4-8da3-4150-9401-44a9c1a5cd04",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "Xyu8eGl7R4HKSW2B",
+          "name": "Slack account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receive Customer Email": {
+      "main": [
+        [
+          {
+            "node": "Prepare Email Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Email Data": {
+      "main": [
+        [
+          {
+            "node": "Classify Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Request": {
+      "main": [
+        [
+          {
+            "node": "Create Support Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Sales Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create General Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Support Ticket": {
+      "main": [
+        [
+          {
+            "node": "Notify Support Team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Sales Ticket": {
+      "main": [
+        [
+          {
+            "node": "Notify sales Team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create General Ticket": {
+      "main": [
+        [
+          {
+            "node": "Notify GeneralTeam",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Support Team": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify sales Team": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify GeneralTeam": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "TuDgBisUVhgJAXA2",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "19536d62-645f-4fff-bf3f-371ced321554",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b04ad7fc0f6b73b7df1bfdb90bc66713d6218007f43f8d9ec37d563e68400e56"
+  },
+  "nodeGroups": [],
+  "id": "fz1L6FkNrxyXkHUD",
+  "tags": []
+}
